@@ -1,0 +1,39 @@
+
+# Secret will be used to sign session cookies, CSRF tokens and for other encryption utilities.
+# It is highly recommended to change this value before running cerebro in production.
+secret = <%= @app_secret_key %>
+
+# Application base path
+basePath = "/"
+
+# Defaults to RUNNING_PID at the root directory of the app.
+# To avoid creating a PID file set this value to /dev/null
+#pidfile.path = "/var/run/cerebro.pid"
+pidfile.path=/dev/null
+
+# Rest request history max size per user
+rest.history.size = 50 // defaults to 50 if not specified
+
+# Path of local database file
+#data.path: "/var/lib/cerebro/cerebro.db"
+data.path = "./cerebro.db"
+
+es = {
+  gzip = true
+}
+
+# Authentication
+# creds are elasticsearch user creds--i.e. aergo, kibana, etc.
+play.ws.ssl {
+        ssl-config {
+          trustManager = {
+            stores = [
+              { type = "PEM", path = "/etc/elasticsearch/certs/ca.crt" }
+              { type = "JKS", path = "/opt/cerebro/current/conf/kibana1-cerebro-truststore.jks" }
+            ]
+          }
+        }
+        loose = {
+                acceptAnyCertificate = true // if your cert common name does not match server name
+        }
+}

@@ -1,0 +1,36 @@
+[Unit]
+Description=<%= @app_systemd_desc %>
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Environment=HOST=<%= @fqdn_hostname %>
+Environment=PORT=<%= @app_port %>
+
+WorkingDirectory=<%= @app_workdir %>
+
+User=<%= @app_user %>
+Group=<%= @app_group %>
+
+ExecStart=<%= @app_bin_path %> -Dhttp.port=${PORT} -Dhttp.address=${HOST}
+
+# Connects standard output to /dev/null
+StandardOutput=<%= @standard_output %>
+
+# Connects standard error to journal
+StandardError=<%= @standard_error %>
+
+# Shutdown delay in seconds, before process is tried to be killed with KILL (if configured)
+TimeoutStopSec=<%= @timeout_stop_sec %>
+
+# SIGTERM signal is used to stop the Java process
+KillSignal=<%= @kill_signal %>
+
+# Java process is never killed
+SendSIGKILL=<%= @send_sig_kill %>
+
+# When a JVM receives a SIGTERM signal it exits with code 143
+SuccessExitStatus=<%= @success_exit_status %>
+
+[Install]
+WantedBy=multi-user.target

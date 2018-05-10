@@ -1,0 +1,43 @@
+<virtualhost *:80>
+  ServerName <%= @fqdn_hostname %>
+  ServerAlias <%= @short_hostname %>
+  RewriteEngine On
+  RewriteCond %{HTTPS} off
+  RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}
+</virtualhost>
+
+<virtualhost *:443>
+  ServerName <%= @fqdn_hostname %>
+  ServerAlias <%= @short_hostname %>
+  ProxyRequests Off
+  ProxyPreserveHost On
+  ProxyReceiveBufferSize 4096
+
+  <proxy>
+    Order deny,allow
+    Allow from all
+  </proxy>
+
+  AllowEncodedSlashes On
+  ProxyPass        /    http://<%= @fqdn_hostname %>:<%= @app_port %>/
+  ProxyPassReverse /    http://<%= @fqdn_hostname %>:<%= @app_port %>/
+
+  <location />
+    Order allow,deny
+    Allow from all
+  </location>
+
+  SSLEngine on
+  SSLProtocol -ALL +TLSv1.2 +TLSv1.1
+  SSLProxyEngine on
+  SSLCipherSuite HIGH:!MEDIUM:!aNULL:!MD5:!RC4:!DES
+  SSLHonorCipherOrder on
+
+  SSLCertificateFile /etc/elasticsearch/certs/<%= @short_hostname %>.crt
+  SSLCertificateKeyFile /etc/elasticsearch/certs/<%= @short_hostname %>.key
+  SSLCACertificateFile /etc/elasticsearch/certs/ca.crt
+
+  BrowserMatch "MSIE [2-5]" \
+  nokeepalive ssl-unclean-shutdown \
+  downgrade-1.0 force-response-1.0
+</virtualhost>

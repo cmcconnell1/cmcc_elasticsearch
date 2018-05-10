@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+#
+# Note this is managed by chef changes here will be overwritten next chef-client run
+#
+# DESCRIPTION
+#   rotate-elastic-snapshots.sh.erb
+#   NOTE: this is managed by chef changes here will be overwritten next chef-client run
+#
+#   Thanks to and based on / inspired by what I saw out there, including:
+#       Karel Bemelman's Elasticsearch backup script with snapshot rotation
+#         ref: https://www.karelbemelmans.com/2015/03/elasticsearch-backup-script-with-snapshot-rotation/
+#       Cloudbees Managing snapshots of your Elasticsearch indices:
+#         ref: https://support.cloudbees.com/hc/en-us/articles/115000592472-Managing-snapshots-of-your-Elasticsearch-indices-
+
+usage() {
+  printf '\nUsage: $0 [-n <CLUSTER_NAME> ] [-r <REPO_NAME> ]\n' 
+    printf '\nExample usage:\n\n\t$0 -n prod1 -r prod1\n' # our cluster name is the same as the main s3 snapshot repo name
+    exit 1
+}
+
+while getopts ":n:r:s:v" o; do
+    case "${o}" in
+        n)
+            n=${OPTARG}
+            export CLUSTER_NAME=${OPTARG}
+            echo "CLUSTER_NAME: ${CLUSTER_NAME}"
+            ;;
+
+        r)
+            r=${OPTARG}
+            export REPO_NAME=${OPTARG}
+            echo "REPO_NAME: ${REPO_NAME}"
+            ;;
+        *)
+            usage
+            ;;
+
+    esac
+done
+shift $((OPTIND-1))
+
+# REQUIREMENTS
+#  jq
+printf "Validating 'jq' is available\n"
+jq -V || { echo 'jq not installed or in path, install jq and try again. Exiting. . .' ; exit 1; }
+
+BASE_DIR="$(dirname "$0")"
+
+if [[ "${CLUSTER_NAME}" == "prod1" ]]; then
+    echo 'sourcing $BASE_DIR/prod1-cluster-vars'
+    source $BASE_DIR/prod1-cluster-vars
+    export ES_URL="https://kibana1.terradatum.com:9200"
+    #env | egrep "(ES_USR|ES_PASSWD|URL|CA|LIMIT)"
+elif [[ "${CLUSTER_NAME}" == "dev1" ]]; then
+    echo 'sourcing $BASE_DIR/dev1-cluster-vars'
+    source $BASE_DIR/dev1-cluster-vars
+    export ES_URL="https://kibana1.dev.terradatum.com:9200"
+    #env | egrep "(ES_USR|ES_PASSWD|URL|CA|LIMIT)"
+else
+    echo "${CLUSTER_NAME} not recognized please use either 'prod1' or 'dev1'"
+    usage
+fi
+
+# Bail and bark if we dont know the CLUSTER_NAME repo_name 
+if [ -z "${n}" ] || [ -z "${r}" ]; then
+    usage
+fi
+
+# Show ALL snapshots
+ALL_SNAPSHOTS=("$(curl -u ${ES_USR}:${ES_PASSWD} -s -XGET "${ES_URL}/_cat/snapshots/${REPO_NAME}?v&s=id")")
+printf "\nALL snapshots in ${REPO_NAME} repo:\n${ALL_SNAPSHOTS}\n"
+
+# Get snapshots past retention period as gated by $LIMIT in the {prod1,dev1}-cluster-vars file
+SNAPSHOT_LIST=("$(curl -u ${ES_USR}:${ES_PASSWD} -s -XGET "${ES_URL}/_snapshot/${REPO_NAME}/_all" | jq -r ".snapshots[:-${LIMIT}][].snapshot")")
+
+printf "\nNOTE:\nIf the snapshot count is greater than \$LIMIT (set in {prod1,dev1}-cluster-vars file), we delete the older expiring snapshots, else we just exit\n"
+
+for SNAPSHOT in ${SNAPSHOT_LIST//\\n/ }
+
+do
+    echo -e "Deleting snapshot: ${SNAPSHOT}"
+    curl -u ${ES_USR}:${ES_PASSWD} -s -XDELETE "$ES_URL/_snapshot/$REPO_NAME/$SNAPSHOT?pretty" | jq '.'
+    if [ "$?" != "0" ]; then
+        echo Could not delete "${SNAPSHOT}."
+    fi
+done
+
+echo "Done!"

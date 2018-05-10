@@ -1,0 +1,17 @@
+---
+driver:
+  name: docker
+  customize:
+    memory: 4096
+    cpus: 4
+  # these three options (volume, cap_add and run_options) are required to run the systemd-based containers
+  # on my Arch Linux systemd host.
+  volume: /sys/fs/cgroup:/sys/fs/cgroup:ro
+  cap_add:
+    - SYS_ADMIN
+  run_options:
+    entrypoint: /sbin/init
+platforms:
+  - name: centos-7
+    driver:
+      name: docker

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+# Note this is managed by chef changes here will be overwritten next chef-client run
+
+export ES_USR=<%= @es_user %>
+export ES_PASSWD=<%= @es_passwd %>
+# LIMIT must be >= 1
+export LIMIT=<%= @snapshot_limit %>
+
+# When running remotely from my OSX workstation
+if [[ "$(uname)" = "Darwin" ]]; then
+    export CURL_CA_BUNDLE="$HOME/certs/elasticsearch/prod1/ca/ca.crt"
+else
+    # Our CentOS ES servers will all have their CA certs here
+    export CURL_CA_BUNDLE="/etc/elasticsearch/certs/ca.crt"
+fi
+
+#export ES_URL="https://kibana1.terradatum.com:9200" # prod
+#export ES_URL="https://kibana1.dev.terradatum.com:9200" # dev
+export ES_URL=<%= @es_url %>

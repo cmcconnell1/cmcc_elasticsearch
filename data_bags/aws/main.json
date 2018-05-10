@@ -1,0 +1,6 @@
+{
+  "id": "main",
+  "aws_access_key_id": "MYAWSCREDSGOHERE",
+  "aws_secret_access_key": "MYSECRETAWSCREDSGORIGHTHERE",
+  "aws_session_token": ""
+}

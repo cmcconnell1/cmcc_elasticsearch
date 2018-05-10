@@ -1,0 +1,79 @@
+---
+concurrency: 2
+
+driver:
+  name: vagrant
+  cachier: true
+  use_sudo: false
+  privileged: true
+
+provisioner:
+  name: chef_zero
+  log_level: info
+  always_update_cookbooks: true
+
+verifier:
+  name: inspec
+  format: documentation
+
+platforms:
+  - name: centos-7
+
+suites:
+  - name: elastic1
+    driver:
+      network:
+        - ["private_network", { type: "dhcp" }]
+      vm_hostname: elastic1.local
+      customize:
+        name: elastic1
+        memory: 2048
+        cpus: 2
+    synced_folders:
+      - ["/var/tmp/data", "/home/vagrant/data", "create: true, type: :nfs"]
+    run_list:
+      - recipe[td_elasticsearch::default]
+
+  - name: elastic2
+    driver:
+      network:
+        - ["private_network", { type: "dhcp" }]
+      vm_hostname: elastic2.local
+      customize:
+        name: elastic2
+        memory: 2048
+        cpus: 2
+    synced_folders:
+      - ["/var/tmp/data", "/home/vagrant/data", "create: true, type: :nfs"]
+    run_list:
+      - recipe[td_elasticsearch::default]
+
+  - name: elastic3
+    driver:
+      network:
+        - ["private_network", { type: "dhcp" }]
+      vm_hostname: elastic3.local
+      customize:
+        name: elastic3
+        memory: 2048
+        cpus: 2
+    synced_folders:
+      - ["/var/tmp/data", "/home/vagrant/data", "create: true, type: :nfs"]
+    run_list:
+      - recipe[td_elasticsearch::default]
+
+  - name: kibana1
+    driver:
+      network:
+        - ["private_network", { type: "dhcp" }]
+      vm_hostname: kibana1.local
+      customize:
+        name: kibana1
+        memory: 2048
+        cpus: 2
+    synced_folders:
+      - ["/var/tmp/data", "/home/vagrant/data", "create: true, type: :nfs"]
+    run_list:
+      - recipe[td_elasticsearch::default]
+      - recipe[td_elasticsearch::kibana]
+      - recipe[td_elasticsearch::cerebro]
